@@ -55,6 +55,7 @@ fi
 
 mkdir -p $CACHE_DIR/download
 mkdir -p $WORKING_HOME/vendor
+mkdir -p $WORKING_HOME/tmp
 mkdir -p $(dirname $PROFILE_PATH)
 
 function install_prebuilt {
@@ -233,6 +234,30 @@ fi
 
 echo "-----> Getting newest list of cabal packages"
 cabal update
+
+
+GIT_SOURCES=$BUILD_DIR/.git-sources
+CABAL_INSTALL_CMD="cabal install"
+if [ -e $GIT_SOURCES ]; then
+  ## Once Heroku has git version >= 1.7.10 available, use this
+  # echo "-----> Installing cabalg"
+  # cabal install cabalg
+  # CABAL_INSTALL_CMD="cabalg $(cat $GIT_SOURCES) -- "
+  echo "-----> Downloading sources"
+  for REPO in $(cat $GIT_SOURCES); do
+    URL=${REPO/%@*/}     # Strip @ followed by anything at the end of the string
+    BRANCH=${REPO/#*@/}  # Strip @ preceded by anything at the beginning of the string
+
+    if [ "$URL" != "$BRANCH" ]; then
+      BRANCH_CO="-b $BRANCH"
+    fi
+
+    TEMPDIR=$(mktemp -d -p $WORKING_HOME/tmp)
+    git clone $URL $BRANCH_CO $TEMPDIR
+
+    cabal sandbox add-source $TEMPDIR
+  done
+fi
 
 echo "-----> Installing user application"
 cabal configure --disable-library-profiling --disable-executable-profiling --disable-tests --disable-library-coverage --disable-benchmarks --enable-executable-stripping --disable-split-objs || true

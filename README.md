@@ -135,6 +135,12 @@ Here are the options
 </table>
 
 
+### Installing packages from source
+
+This buildpack will use `cabalg` to install packages from git. Any repos listed in the file `.git-sources` will be installed
+along with the rest of the packages dependencies.
+
+
 ### Interacting with a running app
 
 ```sh
